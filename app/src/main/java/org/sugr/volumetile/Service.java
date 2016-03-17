@@ -33,6 +33,7 @@ public class Service extends android.service.quicksettings.TileService {
     private PublishSubject<State> volumeState = PublishSubject.create();
     private ViewHolder holder;
     private int focusedStream = AudioManager.STREAM_MUSIC;
+    private Map<Integer, Integer> streamVolumeCache = new HashMap<>();
 
     @Override
     public void onCreate() {
@@ -71,7 +72,10 @@ public class Service extends android.service.quicksettings.TileService {
             } else {
                 if (tupleState.state.volume == -1 || tupleState.tuple.bar.getAlpha() != 1f) {
                     if (tupleState.state.volume == -1) {
-                        tupleState.state.volume = audioManager.getStreamVolume(tupleState.state.stream);
+                        tupleState.state.volume = intOrDefault(streamVolumeCache.get(tupleState.state.stream));
+                        if (tupleState.state.volume == 0) {
+                            tupleState.state.volume = audioManager.getStreamVolume(tupleState.state.stream);
+                        }
                         if (tupleState.state.volume == 0) {
                             tupleState.state.volume = tupleState.tuple.bar.getMax() / 10;
                             if (tupleState.state.volume == 0) {
@@ -92,13 +96,17 @@ public class Service extends android.service.quicksettings.TileService {
 
         Subscription volumeStateSubscription = volumeState.subscribe(state -> {
             if (state.muted || state.volume == 0) {
+                streamVolumeCache.put(state.stream, audioManager.getStreamVolume(state.stream));
                 audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_MUTE, 0);
                 audioManager.setStreamVolume(state.stream, 0, AudioManager.FLAG_PLAY_SOUND);
             } else {
                 if (state.volume == -1 || audioManager.isStreamMute(state.stream)) {
                     if (state.volume == -1) {
                         if (audioManager.getStreamVolume(state.stream) == 0) {
-                            state.volume = audioManager.getStreamMaxVolume(state.stream) / 10;
+                            state.volume = intOrDefault(streamVolumeCache.get(state.stream));
+                            if (state.stream == 0) {
+                                state.volume = audioManager.getStreamMaxVolume(state.stream) / 10;
+                            }
                             if (state.volume == 0) {
                                 state.volume = 1;
                             }
@@ -134,6 +142,7 @@ public class Service extends android.service.quicksettings.TileService {
             });
         }).subscribe(i -> {
             int current = audioManager.getStreamVolume(focusedStream);
+            int max  = audioManager.getStreamMaxVolume(focusedStream);
             int step = audioManager.getStreamMaxVolume(focusedStream) / 10;
             if (step == 0) {
                 step = 1;
@@ -142,10 +151,16 @@ public class Service extends android.service.quicksettings.TileService {
             State state;
             switch (i) {
                 case KeyEvent.KEYCODE_VOLUME_DOWN:
+                    if (current - step < 0) {
+                        return;
+                    }
                     state = new State(focusedStream, current - step, false);
 
                     break;
                 case KeyEvent.KEYCODE_VOLUME_UP:
+                    if (current + step > max) {
+                        return;
+                    }
                     state = new State(focusedStream, current + step, false);
 
                     break;
@@ -207,22 +222,33 @@ public class Service extends android.service.quicksettings.TileService {
         RxSeekBar.userChanges(bar).skip(1).subscribe(v -> {
             focusedStream = stream;
             uiState.onNext(new State(stream, v, false));
+            volumeState.onNext(new State(stream, v, false));
         });
 
         RxView.clicks(mute).subscribe(v -> {
             focusedStream = stream;
             uiState.onNext(new State(stream, -1, true));
+            volumeState.onNext(new State(stream, -1, true));
         });
 
         RxView.clicks(unmute).subscribe(v -> {
             focusedStream = stream;
             uiState.onNext(new State(stream, -1, false));
+            volumeState.onNext(new State(stream, -1, false));
         });
     }
 
     private boolean isVoiceCapable() {
         TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         return telephony != null && telephony.isVoiceCapable();
+    }
+
+    private static int intOrDefault(Integer in) {
+        if (in == null) {
+            return 0;
+        }
+
+        return in;
     }
 
     static class ViewHolder {
