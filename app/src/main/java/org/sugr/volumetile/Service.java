@@ -1,9 +1,10 @@
 package org.sugr.volumetile;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.media.AudioManager;
 import android.provider.Settings;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.view.ContextThemeWrapper;
 import android.telephony.TelephonyManager;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -51,7 +52,7 @@ public class Service extends android.service.quicksettings.TileService {
 
     private void createAndShow() {
         View root = LayoutInflater.from(this).inflate(R.layout.dialog, null);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
         builder.setView(root);
 
         AlertDialog dialog = builder.create();
