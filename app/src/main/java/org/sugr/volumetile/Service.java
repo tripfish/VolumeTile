@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 
 import com.jakewharton.rxbinding.view.RxView;
@@ -19,6 +20,7 @@ import com.jakewharton.rxbinding.widget.RxSeekBar;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -34,6 +36,7 @@ public class Service extends android.service.quicksettings.TileService {
     private ViewHolder holder;
     private int focusedStream = AudioManager.STREAM_MUSIC;
     private Map<Integer, Integer> streamVolumeCache = new HashMap<>();
+    private Subscription closeSubscription;
 
     @Override
     public void onCreate() {
@@ -61,9 +64,21 @@ public class Service extends android.service.quicksettings.TileService {
 
         holder = new ViewHolder(root);
 
+        Observable closeObservable = Observable.interval(2000, 25, TimeUnit.MILLISECONDS).doOnEach(t -> {
+            holder.closeProgress.incrementProgressBy(-1);
+            if (holder.closeProgress.getProgress() == 0) {
+                dialog.dismiss();
+            }
+        });
+        closeSubscription = closeObservable.subscribe();
+
         Subscription uiStateSubscription = uiState.map(
                 state -> new ViewTupleState(holder.tuples.get(state.stream), state)
-        ).subscribe(tupleState -> {
+        ).doOnEach(tupleState -> {
+            closeSubscription.unsubscribe();
+            closeSubscription = closeObservable.subscribe();
+            holder.closeProgress.setProgress(100);
+        }).subscribe(tupleState -> {
             if (tupleState.state.muted || tupleState.state.volume == 0) {
                 tupleState.tuple.bar.animate().alpha(0.3f).start();
                 tupleState.tuple.bar.setProgress(0);
@@ -187,6 +202,7 @@ public class Service extends android.service.quicksettings.TileService {
             uiStateSubscription.unsubscribe();
             volumeStateSubscription.unsubscribe();
             dialogKeySubscription.unsubscribe();
+            closeSubscription.unsubscribe();
             holder = null;
         });
 
@@ -269,6 +285,8 @@ public class Service extends android.service.quicksettings.TileService {
         @Bind(R.id.notification_seek) SeekBar notificationSeek;
 
         @Bind(R.id.notification_row) ViewGroup notificationRow;
+
+        @Bind(R.id.close_progress) ProgressBar closeProgress;
 
         private Map<Integer, ViewTuple> tuples = new HashMap<>();
 

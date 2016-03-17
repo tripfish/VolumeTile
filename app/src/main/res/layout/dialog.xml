@@ -1,107 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:orientation="vertical">
 
-    <TableRow
-        android:id="@+id/media_row"
-        android:gravity="center_vertical">
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/media_mute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_audiotrack_24dp"/>
-        <ImageView
-            android:id="@+id/media_unmute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_audiotrack_off_24dp"
-            android:visibility="gone"/>
-        <SeekBar
-            android:id="@+id/media_seek"
-            android:layout_weight="1"/>
+        <TableRow
+            android:id="@+id/media_row"
+            android:gravity="center_vertical">
 
-    </TableRow>
+            <ImageView
+                android:id="@+id/media_mute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_audiotrack_24dp"/>
+            <ImageView
+                android:id="@+id/media_unmute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_audiotrack_off_24dp"
+                android:visibility="gone"/>
+            <SeekBar
+                android:id="@+id/media_seek"
+                android:layout_weight="1"/>
 
-    <TableRow
-        android:id="@+id/alarm_row"
-        android:gravity="center_vertical">
+        </TableRow>
 
-        <ImageView
-            android:id="@+id/alarm_mute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_alarm_on_24dp"/>
-        <ImageView
-            android:id="@+id/alarm_unmute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_alarm_off_black_24dp"
-            android:visibility="gone"/>
-        <SeekBar
-            android:id="@+id/alarm_seek"
-            android:layout_weight="1"/>
+        <TableRow
+            android:id="@+id/alarm_row"
+            android:gravity="center_vertical">
 
-    </TableRow>
+            <ImageView
+                android:id="@+id/alarm_mute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_alarm_on_24dp"/>
+            <ImageView
+                android:id="@+id/alarm_unmute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_alarm_off_black_24dp"
+                android:visibility="gone"/>
+            <SeekBar
+                android:id="@+id/alarm_seek"
+                android:layout_weight="1"/>
 
-    <TableRow
-        android:id="@+id/ring_row"
-        android:gravity="center_vertical">
+        </TableRow>
 
-        <ImageView
-            android:id="@+id/ring_mute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_ring_volume_black_24dp"/>
-        <ImageView
-            android:id="@+id/ring_unmute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_call_end_black_24dp"
-            android:visibility="gone" />
-        <SeekBar
-            android:id="@+id/ring_seek"
-            android:layout_weight="1"/>
+        <TableRow
+            android:id="@+id/ring_row"
+            android:gravity="center_vertical">
 
-    </TableRow>
+            <ImageView
+                android:id="@+id/ring_mute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_ring_volume_black_24dp"/>
+            <ImageView
+                android:id="@+id/ring_unmute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_call_end_black_24dp"
+                android:visibility="gone" />
+            <SeekBar
+                android:id="@+id/ring_seek"
+                android:layout_weight="1"/>
 
-    <TableRow
-        android:id="@+id/notification_row"
-        android:gravity="center_vertical">
+        </TableRow>
 
-        <ImageView
-            android:id="@+id/notification_mute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_notifications_24dp"/>
-        <ImageView
-            android:id="@+id/notification_unmute"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:tint="@color/iconColor"
-            android:src="@drawable/ic_notifications_off_black_24dp"
-            android:visibility="gone"/>
-        <SeekBar
-            android:id="@+id/notification_seek"
-            android:layout_weight="1"/>
+        <TableRow
+            android:id="@+id/notification_row"
+            android:gravity="center_vertical">
 
-    </TableRow>
+            <ImageView
+                android:id="@+id/notification_mute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_notifications_24dp"/>
+            <ImageView
+                android:id="@+id/notification_unmute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_notifications_off_black_24dp"
+                android:visibility="gone"/>
+            <SeekBar
+                android:id="@+id/notification_seek"
+                android:layout_weight="1"/>
 
-</TableLayout>
+        </TableRow>
+
+    </TableLayout>
+
+    <ProgressBar
+        android:id="@+id/close_progress"
+        style="@android:style/Widget.Material.ProgressBar.Horizontal"
+        android:layout_marginTop="-8dp"
+        android:max="100"
+        android:progress="100"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:alpha="0.3"/>
+</LinearLayout>
