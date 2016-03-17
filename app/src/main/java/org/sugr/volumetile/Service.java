@@ -64,7 +64,7 @@ public class Service extends android.service.quicksettings.TileService {
 
         holder = new ViewHolder(root);
 
-        Observable closeObservable = Observable.interval(2000, 25, TimeUnit.MILLISECONDS).doOnEach(t -> {
+        Observable closeObservable = Observable.interval(2000, 20, TimeUnit.MILLISECONDS).doOnEach(t -> {
             holder.closeProgress.incrementProgressBy(-1);
             if (holder.closeProgress.getProgress() == 0) {
                 dialog.dismiss();
