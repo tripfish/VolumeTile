@@ -13,12 +13,14 @@
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_audiotrack_24dp"/>
         <ImageView
             android:id="@+id/media_unmute"
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_audiotrack_off_24dp"
             android:visibility="gone"/>
         <SeekBar
@@ -36,12 +38,14 @@
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_alarm_on_24dp"/>
         <ImageView
             android:id="@+id/alarm_unmute"
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_alarm_off_black_24dp"
             android:visibility="gone"/>
         <SeekBar
@@ -59,12 +63,14 @@
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_ring_volume_black_24dp"/>
         <ImageView
             android:id="@+id/ring_unmute"
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_call_end_black_24dp"
             android:visibility="gone" />
         <SeekBar
@@ -82,12 +88,14 @@
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_notifications_24dp"/>
         <ImageView
             android:id="@+id/notification_unmute"
             android:padding="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:tint="@color/iconColor"
             android:src="@drawable/ic_notifications_off_black_24dp"
             android:visibility="gone"/>
         <SeekBar
