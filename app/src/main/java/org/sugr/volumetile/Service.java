@@ -5,6 +5,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,16 +16,22 @@ import android.widget.SeekBar;
 import com.jakewharton.rxbinding.view.RxView;
 import com.jakewharton.rxbinding.widget.RxSeekBar;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.Subscription;
+import rx.android.MainThreadSubscription;
 import rx.subjects.PublishSubject;
 
 public class Service extends android.service.quicksettings.TileService {
     private AudioManager audioManager;
+    private PublishSubject<State> uiState = PublishSubject.create();
     private PublishSubject<State> volumeState = PublishSubject.create();
-    private PublishSubject<State> managerState = PublishSubject.create();
     private ViewHolder holder;
+    private int focusedStream = AudioManager.STREAM_MUSIC;
 
     @Override
     public void onCreate() {
@@ -50,73 +57,120 @@ public class Service extends android.service.quicksettings.TileService {
         AlertDialog dialog = builder.create();
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        holder = new ViewHolder();
+        holder = new ViewHolder(root);
 
-        ButterKnife.bind(holder, root);
+        Subscription uiStateSubscription = uiState.map(
+                state -> new ViewTupleState(holder.tuples.get(state.stream), state)
+        ).subscribe(tupleState -> {
+            if (tupleState.state.muted || tupleState.state.volume == 0) {
+                tupleState.tuple.bar.animate().alpha(0.3f).start();
+                tupleState.tuple.bar.setProgress(0);
+                tupleState.tuple.mute.setVisibility(View.GONE);
+                tupleState.tuple.unmute.setVisibility(View.VISIBLE);
+            } else {
+                if (tupleState.state.volume == -1 || tupleState.tuple.bar.getAlpha() != 1f) {
+                    if (tupleState.state.volume == -1) {
+                        tupleState.state.volume = audioManager.getStreamVolume(tupleState.state.stream);
+                        if (tupleState.state.volume == 0) {
+                            tupleState.state.volume = tupleState.tuple.bar.getMax() / 10;
+                            if (tupleState.state.volume == 0) {
+                                tupleState.state.volume = 1;
+                            }
+                        }
+                    }
+                    tupleState.tuple.bar.animate().alpha(1f).start();
+                    tupleState.tuple.mute.setVisibility(View.VISIBLE);
+                    tupleState.tuple.unmute.setVisibility(View.GONE);
+                }
 
-        Subscription volumeSubscription = volumeState.subscribe(state -> {
-            SeekBar bar;
-            ImageView mute;
-            ImageView unmute;
-            switch (state.stream) {
-                case AudioManager.STREAM_MUSIC:
-                    bar = holder.mediaSeek;
-                    mute = holder.mediaMute;
-                    unmute = holder.mediaUnmute;
+                if (tupleState.state.volume > -1) {
+                    tupleState.tuple.bar.setProgress(tupleState.state.volume);
+                }
+            }
+        });
+
+        Subscription volumeStateSubscription = volumeState.subscribe(state -> {
+            if (state.muted || state.volume == 0) {
+                audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_MUTE, 0);
+                audioManager.setStreamVolume(state.stream, 0, AudioManager.FLAG_PLAY_SOUND);
+            } else {
+                if (state.volume == -1 || audioManager.isStreamMute(state.stream)) {
+                    if (state.volume == -1) {
+                        if (audioManager.getStreamVolume(state.stream) == 0) {
+                            state.volume = audioManager.getStreamMaxVolume(state.stream) / 10;
+                            if (state.volume == 0) {
+                                state.volume = 1;
+                            }
+                        }
+                    }
+                    audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_UNMUTE, 0);
+                }
+
+                if (state.volume > -1) {
+                    audioManager.setStreamVolume(state.stream, state.volume, AudioManager.FLAG_PLAY_SOUND);
+                }
+            }
+        });
+
+        Subscription dialogKeySubscription = Observable.<Integer>create(subscriber -> {
+            dialog.setOnKeyListener((dialogInterface, i, keyEvent) -> {
+                if (!subscriber.isUnsubscribed() && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                    switch (i) {
+                        case KeyEvent.KEYCODE_VOLUME_DOWN:
+                        case KeyEvent.KEYCODE_VOLUME_UP:
+                        case KeyEvent.KEYCODE_VOLUME_MUTE:
+                            subscriber.onNext(i);
+                            return true;
+                    }
+                }
+                return false;
+            });
+
+            subscriber.add(new MainThreadSubscription() {
+                @Override protected void onUnsubscribe() {
+                    dialog.setOnKeyListener(null);
+                }
+            });
+        }).subscribe(i -> {
+            int current = audioManager.getStreamVolume(focusedStream);
+            int step = audioManager.getStreamMaxVolume(focusedStream) / 10;
+            if (step == 0) {
+                step = 1;
+            }
+
+            State state;
+            switch (i) {
+                case KeyEvent.KEYCODE_VOLUME_DOWN:
+                    state = new State(focusedStream, current - step, false);
+
                     break;
-                case AudioManager.STREAM_ALARM:
-                    bar = holder.alarmSeek;
-                    mute = holder.alarmMute;
-                    unmute = holder.alarmUnmute;
+                case KeyEvent.KEYCODE_VOLUME_UP:
+                    state = new State(focusedStream, current + step, false);
+
                     break;
-                case AudioManager.STREAM_RING:
-                    bar = holder.ringSeek;
-                    mute = holder.ringMute;
-                    unmute = holder.ringUnmute;
-                    break;
-                case AudioManager.STREAM_NOTIFICATION:
-                    bar = holder.notificationSeek;
-                    mute = holder.notificationMute;
-                    unmute = holder.notificationUnmute;
+                case KeyEvent.KEYCODE_VOLUME_MUTE:
+                    if (audioManager.isStreamMute(focusedStream))  {
+                        state = new State(focusedStream, -1, true);
+                    } else {
+                        if (current == 0) {
+                            current += step;
+                        }
+                        state = new State(focusedStream, current, false);
+                    }
+
                     break;
                 default:
                     return;
             }
 
-            if (state.volume == -1) {
-                if (state.muted) {
-                    bar.setProgress(0);
-                    mute.setVisibility(View.GONE);
-                    unmute.setVisibility(View.VISIBLE);
-                } else {
-                    int current = audioManager.getStreamVolume(state.stream);
-                    bar.setProgress(current);
-                    mute.setVisibility(View.VISIBLE);
-                    unmute.setVisibility(View.GONE);
-                }
-            } else {
-                bar.setProgress(state.volume);
-            }
-        });
-
-        Subscription managerSubscription = managerState.subscribe(state -> {
-            if (state.volume == -1) {
-                if (state.muted) {
-                    audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_MUTE, 0);
-                } else {
-                    audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_UNMUTE, 0);
-                }
-            } else {
-                if (audioManager.isStreamMute(state.stream)) {
-                    audioManager.adjustStreamVolume(state.stream, AudioManager.ADJUST_UNMUTE, 0);
-                }
-                audioManager.setStreamVolume(state.stream, state.volume, AudioManager.FLAG_PLAY_SOUND);
-            }
+            volumeState.onNext(state);
+            uiState.onNext(state);
         });
 
         dialog.setOnDismissListener(d -> {
-            volumeSubscription.unsubscribe();
-            managerSubscription.unsubscribe();
+            uiStateSubscription.unsubscribe();
+            volumeStateSubscription.unsubscribe();
+            dialogKeySubscription.unsubscribe();
             holder = null;
         });
 
@@ -146,25 +200,22 @@ public class Service extends android.service.quicksettings.TileService {
 
         bar.setMax(max);
 
-        volumeState.onNext(new State(stream, audioManager.getStreamVolume(stream), audioManager.isStreamMute(stream)));
+        uiState.onNext(new State(stream, audioManager.getStreamVolume(stream), audioManager.isStreamMute(stream)));
 
-        RxSeekBar.changeEvents(bar).subscribe(event -> {
-        });
-        RxSeekBar.changes(bar).subscribe(v -> {
-            if (audioManager.isStreamMute(stream)) {
-                volumeState.onNext(new State(stream, -1, false));
-            }
-            managerState.onNext(new State(stream, v, false));
+        // Skip the initial value to avoid setting the focused stream
+        RxSeekBar.userChanges(bar).skip(1).subscribe(v -> {
+            focusedStream = stream;
+            uiState.onNext(new State(stream, v, false));
         });
 
         RxView.clicks(mute).subscribe(v -> {
-            volumeState.onNext(new State(stream, -1, true));
-            managerState.onNext(new State(stream, -1, true));
+            focusedStream = stream;
+            uiState.onNext(new State(stream, -1, true));
         });
 
         RxView.clicks(unmute).subscribe(v -> {
-            volumeState.onNext(new State(stream, -1, false));
-            managerState.onNext(new State(stream, -1, false));
+            focusedStream = stream;
+            uiState.onNext(new State(stream, -1, false));
         });
     }
 
@@ -173,7 +224,7 @@ public class Service extends android.service.quicksettings.TileService {
         return telephony != null && telephony.isVoiceCapable();
     }
 
-    class ViewHolder {
+    static class ViewHolder {
         @Bind(R.id.media_mute) ImageView mediaMute;
         @Bind(R.id.media_unmute) ImageView mediaUnmute;
         @Bind(R.id.media_seek) SeekBar mediaSeek;
@@ -191,9 +242,21 @@ public class Service extends android.service.quicksettings.TileService {
         @Bind(R.id.notification_seek) SeekBar notificationSeek;
 
         @Bind(R.id.notification_row) ViewGroup notificationRow;
+
+        private Map<Integer, ViewTuple> tuples = new HashMap<>();
+
+        ViewHolder(View root) {
+            ButterKnife.bind(this, root);
+
+            tuples.put(AudioManager.STREAM_MUSIC, new ViewTuple(mediaMute, mediaUnmute, mediaSeek));
+            tuples.put(AudioManager.STREAM_ALARM, new ViewTuple(alarmMute, alarmUnmute, alarmSeek));
+            tuples.put(AudioManager.STREAM_RING, new ViewTuple(ringMute, ringUnmute, ringSeek));
+            tuples.put(AudioManager.STREAM_NOTIFICATION, new ViewTuple(notificationMute, notificationUnmute, notificationSeek));
+        }
+
     }
 
-    class State {
+    private static class State {
         int stream;
         int volume;
         boolean muted;
@@ -202,6 +265,28 @@ public class Service extends android.service.quicksettings.TileService {
             this.stream = stream;
             this.volume = volume;
             this.muted = muted;
+        }
+    }
+
+    private static class ViewTuple {
+        ImageView mute;
+        ImageView unmute;
+        SeekBar bar;
+
+        public ViewTuple(ImageView mute, ImageView unmute, SeekBar bar) {
+            this.mute = mute;
+            this.unmute = unmute;
+            this.bar = bar;
+        }
+    }
+
+    private static class ViewTupleState {
+        ViewTuple tuple;
+        State state;
+
+        ViewTupleState(ViewTuple tuple, State state) {
+            this.tuple = tuple;
+            this.state = state;
         }
     }
 }
