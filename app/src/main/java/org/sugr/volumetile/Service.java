@@ -1,11 +1,11 @@
 package org.sugr.volumetile;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.media.AudioManager;
 import android.provider.Settings;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.view.ContextThemeWrapper;
 import android.telephony.TelephonyManager;
+import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
