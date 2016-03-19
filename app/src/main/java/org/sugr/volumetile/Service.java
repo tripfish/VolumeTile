@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.media.AudioManager;
 import android.provider.Settings;
+import android.service.quicksettings.Tile;
 import android.telephony.TelephonyManager;
 import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
@@ -37,6 +38,7 @@ public class Service extends android.service.quicksettings.TileService {
     private int focusedStream = AudioManager.STREAM_MUSIC;
     private Map<Integer, Integer> streamVolumeCache = new HashMap<>();
     private Subscription closeSubscription;
+    private Subscription volumePollingSubscription;
 
     @Override
     public void onCreate() {
@@ -52,6 +54,37 @@ public class Service extends android.service.quicksettings.TileService {
         } else {
             createAndShow();
         }
+    }
+
+    @Override
+    public void onStartListening() {
+        super.onStartListening();
+
+        volumePollingSubscription = Observable.just(0l)
+                .mergeWith(Observable.interval(500, TimeUnit.MILLISECONDS))
+                .subscribe(t -> {
+                    int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+                    int max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+
+                    Tile tile = getQsTile();
+                    tile.setLabel(
+                        getString(R.string.tile_level_label, (int) (volume * 100 / max))
+                    );
+                    tile.updateTile();
+                });
+    }
+
+    @Override
+    public void onStopListening() {
+        super.onStopListening();
+
+        if (volumePollingSubscription != null) {
+            volumePollingSubscription.unsubscribe();
+        }
+
+        Tile tile = getQsTile();
+        tile.setLabel(getString(R.string.tile_label));
+        tile.updateTile();
     }
 
     private void createAndShow() {
