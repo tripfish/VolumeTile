@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Volume Tile</string>
     <string name="tile_label">Volume</string>
-    <string name="tile_level_label">Media volume: %1$d %%</string>
+    <string name="tile_level_label">Media volume: %1$d%%</string>
 </resources>
