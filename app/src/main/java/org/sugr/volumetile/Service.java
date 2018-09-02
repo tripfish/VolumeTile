@@ -1,8 +1,12 @@
 package org.sugr.volumetile;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
+import android.os.Build;
 import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.telephony.TelephonyManager;
@@ -15,6 +19,7 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.jakewharton.rxbinding.view.RxView;
 import com.jakewharton.rxbinding.widget.RxSeekBar;
@@ -23,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import rx.Observable;
 import rx.Subscription;
@@ -49,10 +54,31 @@ public class Service extends android.service.quicksettings.TileService {
 
     @Override
     public void onClick() {
-        if (isLocked()) {
-            unlockAndRun(this::createAndShow);
+
+        NotificationManager notificationManager =
+                (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && !notificationManager.isNotificationPolicyAccessGranted()) {
+
+            Intent closeIntent = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            getApplicationContext().sendBroadcast(closeIntent);
+
+            Intent policyIntent = new Intent(
+                    android.provider.Settings
+                            .ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+            startActivity(policyIntent);
+
+            Toast.makeText(getApplicationContext(), "Please grant DND access.",
+                    Toast.LENGTH_LONG).show();
+
         } else {
-            createAndShow();
+
+            if (isLocked()) {
+                unlockAndRun(this::createAndShow);
+            } else {
+                createAndShow();
+            }
         }
     }
 
@@ -243,6 +269,7 @@ public class Service extends android.service.quicksettings.TileService {
 
         setupVolume(holder.mediaSeek, holder.mediaMute, holder.mediaUnmute, AudioManager.STREAM_MUSIC);
         setupVolume(holder.alarmSeek, holder.alarmMute, holder.alarmUnmute, AudioManager.STREAM_ALARM);
+        setupVolume(holder.voiceSeek, holder.voiceMute, holder.voiceUnmute, AudioManager.STREAM_VOICE_CALL);
 
         if (voiceCapable) {
             setupVolume(holder.ringSeek, holder.ringMute, holder.ringUnmute, AudioManager.STREAM_RING);
@@ -301,25 +328,29 @@ public class Service extends android.service.quicksettings.TileService {
     }
 
     static class ViewHolder {
-        @Bind(R.id.media_mute) ImageView mediaMute;
-        @Bind(R.id.media_unmute) ImageView mediaUnmute;
-        @Bind(R.id.media_seek) SeekBar mediaSeek;
+        @BindView(R.id.media_mute) ImageView mediaMute;
+        @BindView(R.id.media_unmute) ImageView mediaUnmute;
+        @BindView(R.id.media_seek) SeekBar mediaSeek;
 
-        @Bind(R.id.alarm_mute) ImageView alarmMute;
-        @Bind(R.id.alarm_unmute) ImageView alarmUnmute;
-        @Bind(R.id.alarm_seek) SeekBar alarmSeek;
+        @BindView(R.id.alarm_mute) ImageView alarmMute;
+        @BindView(R.id.alarm_unmute) ImageView alarmUnmute;
+        @BindView(R.id.alarm_seek) SeekBar alarmSeek;
 
-        @Bind(R.id.ring_mute) ImageView ringMute;
-        @Bind(R.id.ring_unmute) ImageView ringUnmute;
-        @Bind(R.id.ring_seek) SeekBar ringSeek;
+        @BindView(R.id.voice_mute) ImageView voiceMute;
+        @BindView(R.id.voice_unmute) ImageView voiceUnmute;
+        @BindView(R.id.voice_seek) SeekBar voiceSeek;
 
-        @Bind(R.id.notification_mute) ImageView notificationMute;
-        @Bind(R.id.notification_unmute) ImageView notificationUnmute;
-        @Bind(R.id.notification_seek) SeekBar notificationSeek;
+        @BindView(R.id.ring_mute) ImageView ringMute;
+        @BindView(R.id.ring_unmute) ImageView ringUnmute;
+        @BindView(R.id.ring_seek) SeekBar ringSeek;
 
-        @Bind(R.id.notification_row) ViewGroup notificationRow;
+        @BindView(R.id.notification_mute) ImageView notificationMute;
+        @BindView(R.id.notification_unmute) ImageView notificationUnmute;
+        @BindView(R.id.notification_seek) SeekBar notificationSeek;
 
-        @Bind(R.id.close_progress) ProgressBar closeProgress;
+        @BindView(R.id.notification_row) ViewGroup notificationRow;
+
+        @BindView(R.id.close_progress) ProgressBar closeProgress;
 
         private Map<Integer, ViewTuple> tuples = new HashMap<>();
 
@@ -328,6 +359,7 @@ public class Service extends android.service.quicksettings.TileService {
 
             tuples.put(AudioManager.STREAM_MUSIC, new ViewTuple(mediaMute, mediaUnmute, mediaSeek));
             tuples.put(AudioManager.STREAM_ALARM, new ViewTuple(alarmMute, alarmUnmute, alarmSeek));
+            tuples.put(AudioManager.STREAM_VOICE_CALL, new ViewTuple(voiceMute, voiceUnmute, voiceSeek));
             tuples.put(AudioManager.STREAM_RING, new ViewTuple(ringMute, ringUnmute, ringSeek));
             tuples.put(AudioManager.STREAM_NOTIFICATION, new ViewTuple(notificationMute, notificationUnmute, notificationSeek));
         }
