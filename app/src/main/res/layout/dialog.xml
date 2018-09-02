@@ -58,6 +58,31 @@
                 android:layout_weight="1"/>
 
         </TableRow>
+		
+		<TableRow
+            android:id="@+id/voice_row"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/voice_mute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_phone_in_talk_black_24dp"/>
+            <ImageView
+                android:id="@+id/voice_unmute"
+                android:padding="16dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:tint="@color/iconColor"
+                android:src="@drawable/ic_phone_black_24dp"
+                android:visibility="gone"/>
+            <SeekBar
+                android:id="@+id/voice_seek"
+                android:layout_weight="1"/>
+
+        </TableRow>
 
         <TableRow
             android:id="@+id/ring_row"
