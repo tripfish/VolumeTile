@@ -1,3 +1,7 @@
+Releases
+========
+Download APK from [releases page](https://github.com/tripfish/VolumeTile/releases)
+
 # VolumeTile
 A quicksettings tile for changing the device volume
 
